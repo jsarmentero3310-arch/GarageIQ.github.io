@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GarageIQ — Your Smart Garage Assistant</title>
+<meta name="description" content="GarageIQ is a self-hosted garage management app for people who wrench on their own cars — guides, parts tracking, torque specs, and maintenance history in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --bg-raised: #17171a;
+    --card: #1c1c1f;
+    --steel: #3a3a3d;
+    --steel-soft: #2a2a2e;
+    --text: #e8e6e1;
+    --text-dim: #9b9a96;
+    --amber: #d97b3f;
+    --amber-soft: rgba(217, 123, 63, 0.12);
+    --green: #7a8a7a;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  a { color: inherit; }
+
+  ::selection { background: var(--amber-soft); color: var(--amber); }
+
+  :focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Background texture ─────────────────────── */
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    z-index: 1;
+    background-image:
+      radial-gradient(circle at 1px 1px, #fff 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+
+  /* ── Header ──────────────────────────────────── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(14, 14, 15, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--steel-soft);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    background: var(--amber-soft);
+    border: 1px solid var(--amber);
+    border-radius: 7px;
+    color: var(--amber);
+    font-size: 0.85rem;
+  }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 28px;
+  }
+
+  nav a {
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  nav a:hover { color: var(--text); }
+
+  .nav-cta {
+    border: 1px solid var(--steel);
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .nav-cta:hover { border-color: var(--amber); background: var(--amber-soft); }
+
+  .nav-links-mobile { display: none; }
+
+  /* ── Hero ────────────────────────────────────── */
+  .hero {
+    position: relative;
+    z-index: 2;
+    padding: 88px 0 64px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--amber);
+    background: var(--amber-soft);
+    border: 1px solid rgba(217, 123, 63, 0.3);
+    padding: 6px 12px;
+    border-radius: 100px;
+    margin-bottom: 22px;
+  }
+
+  .eyebrow .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.4rem, 5vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 22px;
+  }
+
+  h1 .accent { color: var(--amber); }
+
+  .hero-sub {
+    font-size: 1.08rem;
+    color: var(--text-dim);
+    max-width: 46ch;
+    margin-bottom: 32px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.12s ease, background 0.15s, border-color 0.15s;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #15110c;
+  }
+  .btn-primary:hover { background: #e3893f; }
+
+  .btn-ghost {
+    border-color: var(--steel);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--text-dim); }
+
+  .hero-meta {
+    display: flex;
+    gap: 28px;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .hero-meta strong { color: var(--text); font-weight: 600; }
+
+  /* ── Hero dashboard card mock ───────────────── */
+  .dash-card {
+    background: var(--card);
+    border: 1px solid var(--steel-soft);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  .dash-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--steel-soft);
+    background: var(--bg-raised);
+  }
+
+  .dash-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .dash-card-sub {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .status-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(122, 138, 122, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(122, 138, 122, 0.35);
+    padding: 4px 9px;
+    border-radius: 100px;
+  }
+
+  .dash-card-body { padding: 18px; }
+
+  .dash-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--steel-soft);
+    font-size: 0.85rem;
+  }
+  .dash-row:last-child { border-bottom: none; }
+
+  .dash-row-label { color: var(--text-dim); }
+  .dash-row-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .dash-row-value.amber { color: var(--amber); }
+
+  .torque-strip {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .torque-bolt {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--steel-soft);
+  }
+  .torque-bolt.done { background: var(--green); }
+  .torque-bolt.active { background: var(--amber); }
+
+  /* ── Wrench-tick divider (signature element) ── */
+  .tick-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 56px;
+    opacity: 0.55;
+  }
+  .tick-divider .line {
+    flex: 1;
+    height: 1px;
+    background: var(--steel);
+  }
+  .tick-divider .ticks {
+    display: flex;
+    gap: 7px;
+  }
+  .tick-divider .ticks span {
+    width: 3px;
+    height: 14px;
+    background: var(--steel);
+    border-radius: 1px;
+    transform: rotate(22deg);
+  }
+  .tick-divider .ticks span:nth-child(2) { transform: rotate(-10deg); height: 18px; }
+  .tick-divider .ticks span:nth-child(3) { transform: rotate(30deg); height: 11px; }
+
+  /* ── Section shared ─────────────────────────── */
+  section { position: relative; z-index: 2; }
+
+  .section-head {
+    max-width: 56ch;
+    margin-bottom: 48px;
+  }
+
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+    letter-spacing: -0.015em;
+    margin-bottom: 12px;
+  }
+
+  .section-sub { color: var(--text-dim); font-size: 1rem; }
+
+  /* ── Feature grid ────────────────────────────── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    padding-bottom: 88px;
+  }
+
+  .feature {
+    background: var(--card);
+    border: 1px solid var(--steel-soft);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.18s, transform 0.18s;
+  }
+  .feature:hover {
+    border-color: rgba(217, 123, 63, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .feature-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: var(--bg-raised);
+    border: 1px solid var(--steel-soft);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+  }
+
+  .feature h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.04rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .feature p {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+  }
+
+  /* ── How it works ───────────────────────────── */
+  .how {
+    padding-bottom: 88px;
+  }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .how-step {
+    border-left: 2px solid var(--steel);
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .how-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+
+  .how-step h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .how-step p {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+  }
+
+  /* ── CTA band ────────────────────────────────── */
+  .cta-band {
+    padding-bottom: 100px;
+  }
+
+  .cta-card {
+    background: linear-gradient(155deg, var(--card), var(--bg-raised));
+    border: 1px solid var(--steel-soft);
+    border-radius: 16px;
+    padding: 56px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-card::before {
+    content: "";
+    position: absolute;
+    top: -40%; right: -10%;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, var(--amber-soft), transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-card h2 { margin-bottom: 14px; }
+  .cta-card p {
+    color: var(--text-dim);
+    max-width: 44ch;
+    margin: 0 auto 28px;
+  }
+
+  .cta-card .hero-actions { justify-content: center; margin-bottom: 0; }
+
+  .status-note {
+    margin-top: 24px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Footer ──────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--steel-soft);
+    padding: 32px 0 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+  .footer-links a { text-decoration: none; color: var(--text-dim); transition: color 0.15s; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ── Responsive ──────────────────────────────── */
+  @media (max-width: 860px) {
+    nav ul, .nav-cta { display: none; }
+    .hero-grid { grid-template-columns: 1fr; }
+    .dash-card { max-width: 460px; }
+    .feature-grid { grid-template-columns: 1fr 1fr; }
+    .how-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+
+  @media (max-width: 560px) {
+    .feature-grid { grid-template-columns: 1fr; }
+    .hero { padding: 56px 0 40px; }
+    .cta-card { padding: 40px 24px; }
+    .hero-meta { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header>
+  <div class="wrap nav-inner">
+    <div class="brand">
+      <span class="brand-mark">🔧</span>
+      GarageIQ
+    </div>
+    <nav>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#status">Status</a></li>
+      </ul>
+    </nav>
+    <a class="nav-cta" href="#status">Get notified</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>Built in the garage, not a boardroom</span>
+        <h1>Your garage has<br>a memory now<span class="accent">.</span></h1>
+        <p class="hero-sub">
+          GarageIQ keeps every guide, part, invoice, and torque spec
+          tied to the actual car they belong to — so the next job
+          starts where the last one left off, not from scratch.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#status">Get early access</a>
+          <a class="btn btn-ghost" href="#features">See what it does</a>
+        </div>
+        <div class="hero-meta">
+          <span><strong>Self-hosted.</strong> Your data, your hardware.</span>
+          <span><strong>Multi-vehicle.</strong> One app, every car.</span>
+        </div>
+      </div>
+
+      <div class="dash-card" role="img" aria-label="Preview of a GarageIQ vehicle dashboard showing active project status and torque sequence progress">
+        <div class="dash-card-head">
+          <div>
+            <div class="dash-card-title">2004 Infiniti G35 Coupe</div>
+            <div class="dash-card-sub">VQ35DE · 130,501 mi</div>
+          </div>
+          <span class="status-pill">In progress</span>
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-row">
+            <span class="dash-row-label">Active project</span>
+            <span class="dash-row-value">Auto → manual swap</span>
+          </div>
+          <div class="dash-row">
+            <span class="dash-row-label">Next service due</span>
+            <span class="dash-row-value">Brake fluid · 9,499 mi</span>
+          </div>
+          <div class="dash-row">
+            <span class="dash-row-label">Torque sequence</span>
+            <span class="dash-row-value amber">Bolt 4 of 8 · 65 ft-lb</span>
+          </div>
+          <div class="torque-strip" aria-hidden="true">
+            <div class="torque-bolt done"></div>
+            <div class="torque-bolt done"></div>
+            <div class="torque-bolt done"></div>
+            <div class="torque-bolt active"></div>
+            <div class="torque-bolt"></div>
+            <div class="torque-bolt"></div>
+            <div class="torque-bolt"></div>
+            <div class="torque-bolt"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="tick-divider" aria-hidden="true">
+        <div class="line"></div>
+        <div class="ticks"><span></span><span></span><span></span></div>
+        <div class="line"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="wrap">
+    <div class="section-head">
+      <span class="section-eyebrow">What it tracks</span>
+      <h2>Everything that usually lives in your head, a notebook, and six browser tabs</h2>
+      <p class="section-sub">One place per vehicle for the work, the parts, and the proof it happened.</p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-icon">📖</div>
+        <h3>Living guides</h3>
+        <p>Step-by-step write-ups for every job you've done, editable in place as you learn more — not a one-time forum post.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔩</div>
+        <h3>Torque sequences</h3>
+        <p>Bolt-by-bolt patterns with pass counts and specs, so you're never guessing whether that was the first pass or the final torque.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📦</div>
+        <h3>Parts &amp; consumables</h3>
+        <p>What's ordered, what's installed, and what's sitting on the shelf — oil, filters, and fluids included.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🧾</div>
+        <h3>Invoice scanning</h3>
+        <p>Snap a photo of a receipt and the line items sort themselves into the right vehicle automatically.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔧</div>
+        <h3>Tools inventory</h3>
+        <p>Know what specialty tools a job needs before you're elbow-deep in it and short one socket.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🚗</div>
+        <h3>Built for more than one car</h3>
+        <p>Every vehicle gets its own garage. Shared parts and shared guides stay in sync across all of them.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="wrap how">
+    <div class="section-head">
+      <span class="section-eyebrow">How it works</span>
+      <h2>It runs where your car lives — in your garage</h2>
+      <p class="section-sub">No cloud subscription standing between you and your own maintenance history.</p>
+    </div>
+
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-step-num mono">01</div>
+        <h3>Add a vehicle</h3>
+        <p>VIN, year, mods — whatever you've got. GarageIQ builds the garage around it.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num mono">02</div>
+        <h3>Log as you wrench</h3>
+        <p>Voice notes, photos, and parts get tied to the job while you're still under the car.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num mono">03</div>
+        <h3>Pull it back up anytime</h3>
+        <p>Next time, every spec, every part number, every lesson learned is exactly where you left it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="status" class="wrap cta-band">
+    <div class="cta-card">
+      <h2>GarageIQ is in active build</h2>
+      <p>The app is running daily in a real garage on a real swap project. A self-hosted release is next.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="mailto:hello@garageiq.app">Get notified at launch</a>
+      </div>
+      <div class="status-note">// currently wrenching on: auto-to-manual transmission swap</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <span>&copy; 2026 GarageIQ. Built one job at a time.</span>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
